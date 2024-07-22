@@ -12,8 +12,6 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "travlog")
-@Setter
-@Getter
 public class Travlog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,5 +34,28 @@ public class Travlog {
         this.author = author;
         this.photo = photo;
     }
+    // Getter와 Setter 메소드
+    public Long getId() {
+        return id;
+    }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public byte[] getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(byte[] photo) {
+        this.photo = photo;
+    }
 }
