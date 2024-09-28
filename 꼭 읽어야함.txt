@@ -1,0 +1,8 @@
+application.properties에url을 깃주소로 바꿔야 한다
+
+jdbc:h2:tcp://localhost:9092/~/Desktop/yuhantrip_springboot/yuhantripDB/test에서
+
+Desktop만 깃 주소까지 바꾸면 됨
+
+jdbc:h2:tcp://localhost:9092/~/Documents/GitHub/yuhantrip_springboot/yuhantripDB/test
+이런식으로
