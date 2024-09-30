@@ -3,8 +3,8 @@ package PlaceDB;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "place")
-public class Place {
+@Table(name = "food")
+public class Food {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -16,7 +16,7 @@ public class Place {
     private String category;
 
     // 기본 생성자
-    public Place() {
+    public Food() {
     }
 
     // Getter 및 Setter 메소드
@@ -76,4 +76,5 @@ public class Place {
     public void setCategory(String category) {
         this.category = category;
     }
+
 }

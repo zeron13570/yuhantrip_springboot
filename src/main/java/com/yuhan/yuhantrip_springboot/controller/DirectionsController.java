@@ -1,63 +1,50 @@
 package com.yuhan.yuhantrip_springboot.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @Controller
 public class DirectionsController {
 
-    private final String KAKAO_API_KEY = "6f28c4040e6851e1e1f3524c3ee25832";  // 실제 Kakao API 키로 변경
+    @Value("${kakao.api.key}")  // application.properties에 정의한 키를 읽어옵니다.
+    private String KAKAO_API_KEY;
 
-    // HTML 페이지 반환
-    @GetMapping("/directions")
-    public String showDirectionsPage(Model model) {
-        return "b";
-    }
+    // 경로 찾기 요청을 처리하는 엔드포인트
+    @PostMapping("/findRoute")
+    public ResponseEntity<Map<String, Object>> findRoute(@RequestBody Map<String, Object> routeRequest) {
 
-    // Kakao API 호출 처리
-    @PostMapping("/api/directions")
-    @ResponseBody
-    public ResponseEntity<?> getDirections(@RequestBody Map<String, Object> requestData) {
-        String apiKey = "6f28c4040e6851e1e1f3524c3ee25832";  // 카카오 API 키 설정
-        String kakaoApiUrl = "https://apis-navi.kakaomobility.com/v1/waypoints/directions";
+        String apiUrl = "https://apis-navi.kakaomobility.com/v1/waypoints/directions";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "KakaoAK " + KAKAO_API_KEY);
+        headers.set("Content-Type", "application/json");
+
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(routeRequest, headers);
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Map> response;
 
         try {
-            // 클라이언트에서 받은 데이터 확인
-            System.out.println("Received data: " + requestData);
-
-            // 카카오 API에 전달할 데이터 구성
-            Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("origin", requestData.get("origin"));
-            requestBody.put("destination", requestData.get("destination"));
-            requestBody.put("waypoints", requestData.get("waypoints"));
-            requestBody.put("priority", "RECOMMEND");
-            requestBody.put("car_fuel", "GASOLINE");
-            requestBody.put("car_hipass", false);
-            requestBody.put("alternatives", false);
-            requestBody.put("road_details", true);
-
-            // 카카오 API 요청을 위한 헤더 설정
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Content-Type", "application/json");
-            headers.set("Authorization", "KakaoAK " + apiKey);
-
-            // 카카오 API 요청
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> response = restTemplate.exchange(kakaoApiUrl, HttpMethod.POST, entity, String.class);
-
-            // 성공 시 클라이언트에 응답 반환
-            return ResponseEntity.ok(response.getBody());
-
+            // Kakao Directions API에 POST 요청 보내기
+            response = restTemplate.exchange(apiUrl, HttpMethod.POST, requestEntity, Map.class);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Error occurred while processing directions.");
+            // 예외 처리: 오류가 발생할 경우 빈 결과 반환
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("success", false);
+            errorResult.put("error", "Kakao API 요청 실패: " + e.getMessage());
+            return ResponseEntity.ok(errorResult);
         }
+
+        // 요청이 성공했는지 확인
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", response.getStatusCode() == HttpStatus.OK);
+        result.put("route", response.getBody());
+
+        return ResponseEntity.ok(result);
     }
 }

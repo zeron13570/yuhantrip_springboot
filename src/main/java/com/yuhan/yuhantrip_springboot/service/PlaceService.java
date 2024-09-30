@@ -1,6 +1,12 @@
 package com.yuhan.yuhantrip_springboot.service;
 
+import PlaceDB.Cafe;
+import PlaceDB.Food;
+import PlaceDB.Lodgment;
 import PlaceDB.Place;
+import com.yuhan.yuhantrip_springboot.repository.CafeRepository;
+import com.yuhan.yuhantrip_springboot.repository.FoodRepository;
+import com.yuhan.yuhantrip_springboot.repository.LodgmentRepository;
 import com.yuhan.yuhantrip_springboot.repository.PlaceRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,6 +25,15 @@ public class PlaceService implements CommandLineRunner {
 
     @Autowired
     private PlaceRepository placeRepository;
+
+    @Autowired
+    private CafeRepository cafeRepository;
+
+    @Autowired
+    private FoodRepository foodRepository;
+
+    @Autowired
+    private LodgmentRepository lodgmentRepository;
 
     private final String API_KEY = "6f28c4040e6851e1e1f3524c3ee25832";
 
@@ -90,7 +105,17 @@ public class PlaceService implements CommandLineRunner {
             placeRepository.save(place);
         }
     }
+    // 조회
     public List<Place> getAllPlaces() {
-        return placeRepository.findAll();  // 모든 Place 데이터를 조회
+        return placeRepository.findAll();
+    }
+    public List<Cafe> getAllCafes() {
+        return cafeRepository.findAll();
+    }
+    public List<Food> getAllFoods() {
+        return foodRepository.findAll();
+    }
+    public List<Lodgment> getAllLodgments() {
+        return lodgmentRepository.findAll();
     }
 }

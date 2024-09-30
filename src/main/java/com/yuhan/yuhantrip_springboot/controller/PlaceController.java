@@ -1,15 +1,18 @@
 package com.yuhan.yuhantrip_springboot.controller;
 
+import PlaceDB.Cafe;
+import PlaceDB.Food;
+import PlaceDB.Lodgment;
 import PlaceDB.Place;
 import com.yuhan.yuhantrip_springboot.service.PlaceService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
+@RequestMapping("/api")
 public class PlaceController {
 
     @Autowired
@@ -21,8 +24,21 @@ public class PlaceController {
         placeService.fetchAndSavePlacesForAllRegions(query, radius);
         return "Places fetched and saved successfully for all regions!";
     }
-    @GetMapping("/api/places")
+    @GetMapping("/place")
     public List<Place> getAllPlaces() {
-        return placeService.getAllPlaces();  // H2 데이터베이스에서 모든 장소 데이터 조회
+        return placeService.getAllPlaces();
+    }
+    @GetMapping("/cafe")
+    public List<Cafe> getAllCafes() {
+        return placeService.getAllCafes();
+    }
+    @GetMapping("/food")
+    public List<Food> getAllFoods() {
+        return placeService.getAllFoods();
+    }
+
+    @GetMapping("/lodgment")
+    public List<Lodgment> getAllLodgments() {
+        return placeService.getAllLodgments();
     }
 }
