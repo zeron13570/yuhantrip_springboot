@@ -76,35 +76,52 @@ public class PlaceService implements CommandLineRunner {
         }
     }
 
-    // 카카오 API로 데이터 가져와서 저장하는 메서드
+    // 카카오 API로 데이터 가져와서 저장하는 메서드 (페이지네이션 추가)
     public void fetchAndSavePlaces(String query, double x, double y, int radius) {
         String apiKey = "KakaoAK " + API_KEY;
-        String url = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" + query + "&x=" + x + "&y=" + y + "&radius=" + radius;
+        String urlTemplate = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" + query + "&x=" + x + "&y=" + y + "&radius=" + radius + "&page=";
 
         RestTemplate restTemplate = new RestTemplate();
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
         headers.set("Authorization", apiKey);
         org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(headers);
 
-        org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, entity, String.class);
-        String responseBody = response.getBody();
+        int page = 1;
+        boolean hasNextPage = true;
 
-        JSONObject jsonObject = new JSONObject(responseBody);
-        JSONArray placesArray = jsonObject.getJSONArray("documents");
+        // 페이지 반복문을 사용하여 최대 데이터를 가져오기
+        while (hasNextPage) {
+            String url = urlTemplate + page;
+            org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, entity, String.class);
+            String responseBody = response.getBody();
 
-        for (int i = 0; i < placesArray.length(); i++) {
-            JSONObject placeObject = placesArray.getJSONObject(i);
-            Place place = new Place();
-            place.setName(placeObject.getString("place_name"));
-            place.setAddress(placeObject.getString("address_name"));
-            place.setLatitude(placeObject.getDouble("y"));
-            place.setLongitude(placeObject.getDouble("x"));
-            place.setPhone(placeObject.optString("phone", null));
+            JSONObject jsonObject = new JSONObject(responseBody);
+            JSONArray placesArray = jsonObject.getJSONArray("documents");
 
-            // 데이터베이스에 저장
-            placeRepository.save(place);
+            // 결과 데이터가 없으면 반복 종료
+            if (placesArray.length() == 0) {
+                break;
+            }
+
+            for (int i = 0; i < placesArray.length(); i++) {
+                JSONObject placeObject = placesArray.getJSONObject(i);
+                Place place = new Place();
+                place.setName(placeObject.getString("place_name"));
+                place.setAddress(placeObject.getString("address_name"));
+                place.setLatitude(placeObject.getDouble("y"));
+                place.setLongitude(placeObject.getDouble("x"));
+                place.setPhone(placeObject.optString("phone", null));
+
+                // 데이터베이스에 저장
+                placeRepository.save(place);
+            }
+
+            // 다음 페이지가 있는지 확인
+            hasNextPage = !jsonObject.getJSONObject("meta").getBoolean("is_end");
+            page++; // 다음 페이지로 이동
         }
     }
+
     // 조회
     public List<Place> getAllPlaces() {
         return placeRepository.findAll();

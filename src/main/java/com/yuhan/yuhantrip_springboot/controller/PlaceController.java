@@ -36,7 +36,6 @@ public class PlaceController {
     public List<Food> getAllFoods() {
         return placeService.getAllFoods();
     }
-
     @GetMapping("/lodgment")
     public List<Lodgment> getAllLodgments() {
         return placeService.getAllLodgments();
