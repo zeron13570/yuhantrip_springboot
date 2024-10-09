@@ -1,9 +1,6 @@
 package com.yuhan.yuhantrip_springboot.service;
 
-import PlaceDB.Cafe;
-import PlaceDB.Food;
-import PlaceDB.Lodgment;
-import PlaceDB.Place;
+import PlaceDB.*;
 import com.yuhan.yuhantrip_springboot.repository.CafeRepository;
 import com.yuhan.yuhantrip_springboot.repository.FoodRepository;
 import com.yuhan.yuhantrip_springboot.repository.LodgmentRepository;
@@ -15,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.boot.CommandLineRunner;
 
-
+import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,51 +32,153 @@ public class PlaceService implements CommandLineRunner {
     @Autowired
     private LodgmentRepository lodgmentRepository;
 
-    private final String API_KEY = "6f28c4040e6851e1e1f3524c3ee25832";
+    private final String API_KEY = "98fd008ffc24d8862055a60d6e18f3e4"; // 실제 API 키로 변경하세요.
+    private final String STATE_FILE = "state.json";
 
-    // 지역별 좌표를 저장하는 Map
-    private final Map<String, double[]> regionCoordinates = new HashMap<>();
-
-    public PlaceService() {
-        // 좌표 데이터 (도시명, [위도, 경도])
-        regionCoordinates.put("서울", new double[]{37.5665, 126.9780});
-        regionCoordinates.put("부산", new double[]{35.1796, 129.0756});
-        regionCoordinates.put("제주", new double[]{33.4996, 126.5312});
-        regionCoordinates.put("강릉", new double[]{37.7519, 128.8760});
-        regionCoordinates.put("군산", new double[]{35.9672, 126.7360});
-        regionCoordinates.put("경주", new double[]{35.8562, 129.2247});
-        regionCoordinates.put("인천", new double[]{37.4563, 126.7052});
-        regionCoordinates.put("수원", new double[]{37.2636, 127.0286});
-        regionCoordinates.put("포항", new double[]{36.0190, 129.3435});
-        regionCoordinates.put("울산", new double[]{35.5384, 129.3114});
-        regionCoordinates.put("대구", new double[]{35.8722, 128.6025});
-        regionCoordinates.put("전주", new double[]{35.8242, 127.1480});
-        // 추가로 다른 도시들도 여기에 넣을 수 있습니다.
-    }
-
-    //애플리케이션이 시작될 때 자동으로 지역별 데이터 저장
     @Override
     public void run(String... args) throws Exception {
-//        fetchAndSavePlacesForAllRegions("숙박", 5000);
+        System.out.println("Loading resume data...");
+
+        // 상태 파일을 읽어서 현재 상태를 로드합니다.
+        Map<String, String> queryStates = loadQueryCompletionStatus();
+        System.out.println("Loaded query states: " + queryStates);
+
+        // 데이터 수집 키워드 리스트
+        String[] detailedQueries = {"관광지", "박물관", "아이와체험", "문화예술공간", "미술관", "명소", "카페", "음식점", "식당", "숙박", "호텔", "모텔", "놀거리"};
+
+        // 서울, 부산, 제주도를 순차적으로 수집
+        String[] regions = {"서울", "부산", "제주도"};
+
+        for (String region : regions) {
+            System.out.println("Starting data collection for region: " + region);
+
+            double[] coordinates = getRegionCoordinates(region);
+            double minLat = coordinates[0];
+            double maxLat = coordinates[1];
+            double minLon = coordinates[2];
+            double maxLon = coordinates[3];
+
+            for (String query : detailedQueries) {
+                // queryKey 생성 시 올바르게 설정
+                String queryKey = region + "_" + query;
+                System.out.println("Using queryKey: " + queryKey);  // 디버그 로그로 올바르게 생성되는지 확인
+
+                if (queryStates.containsKey(queryKey) && queryStates.get(queryKey).equals("completed")) {
+                    System.out.println("Query already completed for " + query + " in region: " + region);
+                    continue;
+                }
+
+                // 실행시 데이터가져옴
+                fetchAndSavePlacesForAllRects(query, determineCategory(query), queryKey, queryStates, minLat, maxLat, minLon, maxLon);
+
+                queryStates.put(queryKey, "completed");
+                saveQueryStates(queryStates);
+                System.out.println("Query completed: " + query + " in region: " + region + " - State updated and saved.");
+            }
+        }
+
+        System.out.println("All regions and queries completed.");
     }
 
-    public void fetchAndSavePlacesForAllRegions(String query, int radius) {
-        // 지역별로 데이터를 가져오는 루프
-        for (Map.Entry<String, double[]> entry : regionCoordinates.entrySet()) {
-            String region = entry.getKey();
-            double[] coordinates = entry.getValue();
-            double x = coordinates[1]; // 경도
-            double y = coordinates[0]; // 위도
-
-            System.out.println("Fetching places for region: " + region);
-            fetchAndSavePlaces(query, x, y, radius);
+    private String determineCategory(String query) {
+        if (query.contains("관광지") || query.contains("명소") || query.contains("유적지") || query.contains("박물관") || query.contains("미술관")) {
+            return "place";
+        } else if (query.contains("카페")) {
+            return "cafe";
+        } else if (query.contains("음식점") || query.contains("식당")) {
+            return "food";
+        } else if (query.contains("숙박") || query.contains("호텔") || query.contains("모텔")) {
+            return "lodgment";
+        } else {
+            return "place";  // 기본 카테고리 설정
         }
     }
 
-    // 카카오 API로 데이터 가져와서 저장하는 메서드 (페이지네이션 추가)
-    public void fetchAndSavePlaces(String query, double x, double y, int radius) {
+    private void saveQueryStates(Map<String, String> queryStates) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(STATE_FILE))) {
+            JSONObject json = new JSONObject(queryStates);
+            writer.write(json.toString());
+            System.out.println("Query states saved: " + json.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Map<String, String> loadQueryCompletionStatus() {
+        Map<String, String> queryStates = new HashMap<>();
+        File file = new File(STATE_FILE);
+        if (file.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String content = reader.readLine();
+                if (content != null) {
+                    JSONObject json = new JSONObject(content);
+                    for (String key : json.keySet()) {
+                        queryStates.put(key, json.getString(key));  // 모든 상태를 String으로 읽어옴
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return queryStates;
+    }
+
+    private double[] getRegionCoordinates(String region) {
+        switch (region) {
+            case "서울":
+                return new double[]{37.413294, 37.715133, 126.734086, 127.269311};
+            case "부산":
+                return new double[]{35.0400, 35.2400, 128.9000, 129.3000};
+            case "제주도":
+                return new double[]{33.1000, 33.5800, 126.1000, 126.9800};
+            default:
+                throw new IllegalArgumentException("Unknown region: " + region);
+        }
+    }
+
+    public void fetchAndSavePlacesForAllRects(String query, String category, String queryKey, Map<String, String> queryStates, double minLat, double maxLat, double minLon, double maxLon) {
+        double latStep = 0.003;
+        double lonStep = 0.003;
+
+        boolean resume = queryStates.containsKey(queryKey) && queryStates.get(queryKey).startsWith("resume:");
+
+        for (double lat = minLat; lat < maxLat; lat += latStep) {
+            for (double lon = minLon; lon < maxLon; lon += lonStep) {
+                String rect = String.format("%f,%f,%f,%f", lon, lat, lon + lonStep, lat + latStep);
+
+                // queryKey와 resume 키를 비교할 때 정확하게 일치하는지 확인
+                if (resume && !rect.equals(queryStates.get(queryKey).substring(7))) {
+                    continue;
+                }
+
+                // 로그에 queryKey와 query를 정확하게 표시하도록 수정
+                System.out.println("Fetching rect: " + rect + " for query: " + query + " queryKey: " + queryKey);
+                boolean hasData = fetchPlacesByRect(query, rect, category, queryStates, queryKey);
+
+                if (hasData) {
+                    queryStates.put(queryKey, "resume:" + rect);
+                    saveQueryStates(queryStates);
+                    System.out.println("Query states saved for queryKey: " + queryKey);
+                }
+
+                try {
+                    Thread.sleep(500);  // 스로틀링 방지
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
+                resume = false;  // resume 상태 초기화
+            }
+        }
+
+        queryStates.put(queryKey, "completed");
+        saveQueryStates(queryStates);
+        System.out.println("Query completed: " + queryKey + " - State updated and saved.");
+    }
+
+    public boolean fetchPlacesByRect(String query, String rect, String category, Map<String, String> queryStates, String queryKey) {
         String apiKey = "KakaoAK " + API_KEY;
-        String urlTemplate = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" + query + "&x=" + x + "&y=" + y + "&radius=" + radius + "&page=";
+        String urlTemplate = "https://dapi.kakao.com/v2/local/search/keyword.json?query=" + query + "&rect=" + rect + "&page=%d&size=15";
 
         RestTemplate restTemplate = new RestTemplate();
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
@@ -88,41 +187,131 @@ public class PlaceService implements CommandLineRunner {
 
         int page = 1;
         boolean hasNextPage = true;
+        int maxPages = 45;
+        boolean hasData = false;
 
-        // 페이지 반복문을 사용하여 최대 데이터를 가져오기
-        while (hasNextPage) {
-            String url = urlTemplate + page;
-            org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, entity, String.class);
-            String responseBody = response.getBody();
+        while (hasNextPage && page <= maxPages) {
+            String url = String.format(urlTemplate, page);
+            System.out.println("Requesting URL: " + url + " for queryKey: " + queryKey);  // queryKey 로그 추가
 
-            JSONObject jsonObject = new JSONObject(responseBody);
-            JSONArray placesArray = jsonObject.getJSONArray("documents");
+            try {
+                org.springframework.http.ResponseEntity<String> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, entity, String.class);
+                String responseBody = response.getBody();
 
-            // 결과 데이터가 없으면 반복 종료
-            if (placesArray.length() == 0) {
+                if (responseBody == null || responseBody.isEmpty()) {
+                    System.out.println("No data found for rect: " + rect + " at page: " + page + " for queryKey: " + queryKey);
+                    break;
+                }
+
+                JSONObject jsonObject = new JSONObject(responseBody);
+                JSONArray placesArray = jsonObject.getJSONArray("documents");
+
+                if (placesArray.length() == 0) {
+                    System.out.println("Empty data for rect: " + rect + " at page: " + page + " for queryKey: " + queryKey);
+                    hasNextPage = false;
+                    break;
+                }
+
+                hasData = true;
+
+                for (int i = 0; i < placesArray.length(); i++) {
+                    JSONObject placeObject = placesArray.getJSONObject(i);
+                    String name = placeObject.getString("place_name");
+                    String address = placeObject.getString("address_name");
+                    double latitude = placeObject.getDouble("y");
+                    double longitude = placeObject.getDouble("x");
+                    String phone = placeObject.optString("phone", null);
+
+                    savePlaceByCategory(name, address, latitude, longitude, phone, query, category);
+                }
+
+                JSONObject meta = jsonObject.getJSONObject("meta");
+                boolean isEnd = meta.getBoolean("is_end");
+                if (isEnd) {
+                    System.out.println("Reached end of pages for rect: " + rect + " at page: " + page + " for queryKey: " + queryKey);
+                    hasNextPage = false;
+                } else {
+                    page++;
+                }
+
+            } catch (Exception e) {
+                System.out.println("Error occurred while requesting URL: " + url + " for queryKey: " + queryKey);
+                e.printStackTrace();
+                hasNextPage = false;
+            }
+        }
+
+        return hasData;
+    }
+
+
+    // 중복 검사 및 데이터 저장
+    private void savePlaceByCategory(String name, String address, double latitude, double longitude, String phone, String query, String category) {
+        switch (category) {
+            case "place":
+                if (!placeRepository.findByNameAndAddress(name, address).isPresent()) saveNewPlace(name, address, latitude, longitude, phone, query);
                 break;
-            }
-
-            for (int i = 0; i < placesArray.length(); i++) {
-                JSONObject placeObject = placesArray.getJSONObject(i);
-                Place place = new Place();
-                place.setName(placeObject.getString("place_name"));
-                place.setAddress(placeObject.getString("address_name"));
-                place.setLatitude(placeObject.getDouble("y"));
-                place.setLongitude(placeObject.getDouble("x"));
-                place.setPhone(placeObject.optString("phone", null));
-
-                // 데이터베이스에 저장
-                placeRepository.save(place);
-            }
-
-            // 다음 페이지가 있는지 확인
-            hasNextPage = !jsonObject.getJSONObject("meta").getBoolean("is_end");
-            page++; // 다음 페이지로 이동
+            case "cafe":
+                if (!cafeRepository.findByNameAndAddress(name, address).isPresent()) saveNewCafe(name, address, latitude, longitude, phone, query);
+                break;
+            case "food":
+                if (!foodRepository.findByNameAndAddress(name, address).isPresent()) saveNewFood(name, address, latitude, longitude, phone, query);
+                break;
+            case "lodgment":
+                if (!lodgmentRepository.findByNameAndAddress(name, address).isPresent()) saveNewLodgment(name, address, latitude, longitude, phone, query);
+                break;
         }
     }
 
-    // 조회
+    private void saveNewPlace(String name, String address, double latitude, double longitude, String phone, String query) {
+        Place place = new Place();
+        place.setName(name);
+        place.setAddress(address);
+        place.setLatitude(latitude);
+        place.setLongitude(longitude);
+        place.setPhone(phone);
+        place.setCategory(query);
+        placeRepository.save(place);
+        System.out.println("Saved place: " + place.getName());
+    }
+
+    private void saveNewCafe(String name, String address, double latitude, double longitude, String phone, String query) {
+        Cafe cafe = new Cafe();
+        cafe.setName(name);
+        cafe.setAddress(address);
+        cafe.setLatitude(latitude);
+        cafe.setLongitude(longitude);
+        cafe.setPhone(phone);
+        cafe.setCategory(query);
+        cafeRepository.save(cafe);
+        System.out.println("Saved cafe: " + cafe.getName());
+    }
+
+    private void saveNewFood(String name, String address, double latitude, double longitude, String phone, String query) {
+        Food food = new Food();
+        food.setName(name);
+        food.setAddress(address);
+        food.setLatitude(latitude);
+        food.setLongitude(longitude);
+        food.setPhone(phone);
+        food.setCategory(query);
+        foodRepository.save(food);
+        System.out.println("Saved food: " + food.getName());
+    }
+
+    private void saveNewLodgment(String name, String address, double latitude, double longitude, String phone, String query) {
+        Lodgment lodgment = new Lodgment();
+        lodgment.setName(name);
+        lodgment.setAddress(address);
+        lodgment.setLatitude(latitude);
+        lodgment.setLongitude(longitude);
+        lodgment.setPhone(phone);
+        lodgment.setCategory(query);
+        lodgmentRepository.save(lodgment);
+        System.out.println("Saved lodgment: " + lodgment.getName());
+    }
+
+    // 조회 메서드들
     public List<Place> getAllPlaces() {
         return placeRepository.findAll();
     }
@@ -134,5 +323,12 @@ public class PlaceService implements CommandLineRunner {
     }
     public List<Lodgment> getAllLodgments() {
         return lodgmentRepository.findAll();
+    }
+    // DB + 지도api 경로찾기
+    public Place getPlaceByName(String name) {
+        return placeRepository.findByName(name);
+    }
+    public Place findPlaceByName(String name) {
+        return placeRepository.findByName(name);
     }
 }

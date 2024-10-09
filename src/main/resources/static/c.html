@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>경로 찾기</title>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=c70b578c8bb0dd5de8afc1549c27a483&libraries=services"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        #search-form {
+            width: 30%;
+            margin-right: 20px;
+        }
+
+        #map {
+            width: 70%;
+            height: 600px;
+        }
+
+        button, select {
+            margin: 10px 0;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<h1>경로 찾기</h1>
+<div id="container">
+    <div id="search-form">
+        <h2>출발지 및 도착지 선택</h2>
+        <label>출발지 선택: </label>
+        <select id="start-place-list">
+            <option value="">출발지를 선택하세요</option>
+        </select><br><br>
+
+        <label>도착지 이름: </label>
+        <input type="text" id="end-place" placeholder="예: 강남역">
+        <button onclick="fetchEndCoordinates()">도착지 검색</button><br><br>
+
+        <select id="end-place-list">
+            <option value="">도착지를 선택하세요</option>
+        </select><br><br>
+
+        <button onclick="searchRoute()">경로 찾기</button>
+    </div>
+
+    <div id="map"></div>
+</div>
+
+<script>
+    let startCoordinates = null;
+    let endCoordinates = null;
+    let markers = [];
+    let polyline = null;
+
+    // 지도 생성 및 초기 설정
+    let map = new kakao.maps.Map(document.getElementById('map'), {
+        center: new kakao.maps.LatLng(37.5665, 126.9780), // 초기 지도 중심
+        level: 7
+    });
+
+    // 출발지 목록 가져오기
+    window.onload = function() {
+        fetch('/api/place')
+            .then(response => response.json())
+            .then(data => {
+                const startPlaceList = document.getElementById('start-place-list');
+                data.forEach(place => {
+                    const option = document.createElement('option');
+                    option.value = place.name;
+                    option.text = `${place.name}`;
+                    startPlaceList.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error fetching start places:', error));
+    };
+
+    // 출발지 선택 시 좌표 설정
+    document.getElementById('start-place-list').addEventListener('change', function() {
+        const selectedPlaceName = this.value;
+        if (selectedPlaceName) {
+            const encodedPlaceName = encodeURIComponent(selectedPlaceName);
+            fetch(`/api/places/coordinates?placeName=${encodedPlaceName}`)
+                .then(response => response.json())
+                .then(data => {
+                    startCoordinates = { x: data.longitude, y: data.latitude };
+                    console.log("출발지 좌표:", startCoordinates);
+                })
+                .catch(error => console.error('Error fetching start coordinates:', error));
+        }
+    });
+
+    // 도착지 검색
+    function fetchEndCoordinates() {
+        const endPlaceName = document.getElementById('end-place').value;
+        const ps = new kakao.maps.services.Places();
+
+        ps.keywordSearch(endPlaceName, function(result, status) {
+            if (status === kakao.maps.services.Status.OK) {
+                const endPlaceList = document.getElementById('end-place-list');
+                endPlaceList.innerHTML = '<option value="">도착지를 선택하세요</option>';
+                result.forEach((place, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.text = `${place.place_name}`;
+                    option.dataset.latitude = place.y;
+                    option.dataset.longitude = place.x;
+                    endPlaceList.appendChild(option);
+                });
+            } else {
+                alert('도착지를 찾을 수 없습니다.');
+            }
+        });
+    }
+
+    // 도착지 선택 시 좌표 설정
+    document.getElementById('end-place-list').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            endCoordinates = {
+                x: parseFloat(selectedOption.dataset.longitude),
+                y: parseFloat(selectedOption.dataset.latitude)
+            };
+            console.log("도착지 좌표:", endCoordinates);
+        }
+    });
+
+    // 경로 찾기
+    function searchRoute() {
+        if (!startCoordinates || !endCoordinates) {
+            alert("출발지와 도착지 좌표를 먼저 설정하세요!");
+            return;
+        }
+
+        const requestData = {
+            origin: startCoordinates,
+            destination: endCoordinates
+        };
+
+        fetch('/api/path/find', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => response.json())
+            .then(routeData => {
+                console.log("경로 데이터:", routeData);
+                drawRouteOnMap(routeData);
+            })
+            .catch(error => console.error('Error finding route:', error));
+    }
+
+    // 경로 그리기 및 숫자 마커 표시
+    function drawRouteOnMap(routeData) {
+        // 기존 마커 및 경로 제거
+        markers.forEach(marker => marker.setMap(null));
+        markers = [];
+
+        if (polyline) {
+            polyline.setMap(null);
+        }
+
+        // 경로 데이터에서 좌표 추출
+        const path = routeData.routes[0].sections[0].roads.map(road =>
+            new kakao.maps.LatLng(parseFloat(road.latitude), parseFloat(road.longitude))
+        );
+
+        // Polyline 생성하여 경로 그리기
+        polyline = new kakao.maps.Polyline({
+            path: path,
+            strokeWeight: 5,
+            strokeColor: '#FF0000',
+            strokeOpacity: 1.0,
+            strokeStyle: 'solid'
+        });
+        polyline.setMap(map);
+
+        // 경로 시작, 경유, 도착지에 숫자 마커 표시
+        const points = [startCoordinates, ...routeData.routes[0].sections[0].roads.map(road => ({
+            x: road.longitude,
+            y: road.latitude
+        })), endCoordinates];
+
+        points.forEach((point, index) => {
+            const markerPosition = new kakao.maps.LatLng(parseFloat(point.y), parseFloat(point.x));
+            const marker = new kakao.maps.Marker({
+                position: markerPosition,
+                map: map,
+                title: `지점 ${index + 1}`,
+                zIndex: index + 1
+            });
+
+            // 숫자 마커
+            const content = `<div style="color:white;background:red;padding:5px;border-radius:50%;width:30px;text-align:center;">${index + 1}</div>`;
+            const customOverlay = new kakao.maps.CustomOverlay({
+                position: markerPosition,
+                content: content
+            });
+            customOverlay.setMap(map);
+
+            markers.push(marker);
+        });
+
+        // 지도 중심 이동 및 확대 레벨 설정
+        map.setCenter(points[Math.floor(points.length / 2)]);
+        map.setLevel(5); // 적절한 레벨로 조정
+    }
+</script>
+</body>
+</html>

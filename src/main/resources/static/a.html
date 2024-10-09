@@ -142,16 +142,24 @@
         } else {
             selectedPlaces.push({ key: placeKey, place: place });
             el.classList.add('selected');
-            addMarker(place);
+            addMarker(place, selectedPlaces.length);
+
+            console.log(`선택된 장소: ${place.place_name}, 좌표: (${place.y}, ${place.x})`);
         }
 
+        updateMapBounds();
         updateRouteButtonState();
     }
 
-    function addMarker(place) {
+    function addMarker(place, index) {
+        var imageSrc = `https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_number_blue_${index}.png`; // 숫자 마커 이미지
+        var imageSize = new kakao.maps.Size(36, 37); // 마커 이미지 크기
+        var markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
+
         var marker = new kakao.maps.Marker({
             map: map,
-            position: new kakao.maps.LatLng(place.y, place.x)
+            position: new kakao.maps.LatLng(place.y, place.x),
+            image: markerImage // 마커에 숫자 마커 이미지 적용
         });
 
         var infowindow = new kakao.maps.InfoWindow({
@@ -189,34 +197,6 @@
         updateRouteButtonState();
     }
 
-    function updateRouteButtonState() {
-        var routeBtn = document.getElementById('showRouteBtn');
-        if (selectedPlaces.length > 1) {
-            routeBtn.disabled = false;
-        } else {
-            routeBtn.disabled = true;
-        }
-    }
-
-    function togglePlaceSelection(place, el) {
-        var placeKey = `${place.id}-${place.place_name}`;
-
-        if (selectedPlaces.find(p => p.key === placeKey)) {
-            selectedPlaces = selectedPlaces.filter(p => p.key !== placeKey);
-            el.classList.remove('selected');
-            removeMarker(place);
-        } else {
-            selectedPlaces.push({ key: placeKey, place: place });
-            el.classList.add('selected');
-            addMarker(place);
-        }
-
-        // 모든 선택된 장소를 한 화면에 나타내도록 지도 범위를 설정
-        updateMapBounds();
-
-        updateRouteButtonState();
-    }
-
     function updateMapBounds() {
         var bounds = new kakao.maps.LatLngBounds();
 
@@ -230,17 +210,13 @@
         }
     }
 
-    function findNearestStation(coords) {
-        return new Promise((resolve, reject) => {
-            var places = new kakao.maps.services.Places();
-            places.categorySearch('SW8', function(result, status) {
-                if (status === kakao.maps.services.Status.OK) {
-                    resolve(result[0]); // 가장 가까운 역 반환
-                } else {
-                    reject(new Error('근처에 역을 찾을 수 없습니다.'));
-                }
-            }, {location: new kakao.maps.LatLng(coords.y, coords.x), radius: 1000}); // 반경 1000m 내에서 검색
-        });
+    function updateRouteButtonState() {
+        var routeBtn = document.getElementById('showRouteBtn');
+        if (selectedPlaces.length > 1) {
+            routeBtn.disabled = false;
+        } else {
+            routeBtn.disabled = true;
+        }
     }
 
     function showRoute() {
@@ -251,105 +227,23 @@
 
         var origin = selectedPlaces[0].place;
         var destination = selectedPlaces[selectedPlaces.length - 1].place;
-        var waypoints = selectedPlaces.slice(1, -1).map(p => `${p.place.y},${p.place.x}`).join('|');
+        var waypoints = selectedPlaces.slice(1, -1).map(p => `geo!${p.place.y},${p.place.x}`).join('|');
 
-        // 출발지 좌표로 가장 가까운 역을 찾아서 출발지로 설정
-        findNearestStation({x: origin.x, y: origin.y})
-            .then(station => {
-                if (!station || !station.y || !station.x) {
-                    alert('출발지 근처에 유효한 역을 찾을 수 없습니다.');
-                    return;
-                }
+        var url = `https://apis-navi.kakaomobility.com/v1/route?origin=${origin.y},${origin.x}&destination=${destination.y},${destination.x}&waypoints=${waypoints}&priority=RECOMMEND&summary=true`;
 
-                console.log('가장 가까운 역:', station.place_name, '위치:', station.y, station.x);
-
-                // 새로 설정된 출발지로 API 요청
-                var url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${encodeURIComponent(station.y)},${encodeURIComponent(station.x)}&destination=${encodeURIComponent(destination.y)},${encodeURIComponent(destination.x)}&priority=RECOMMEND&car_fuel=GASOLINE&car_hipass=true&summary=true`;
-
-                if (waypoints) {
-                    url += `&waypoints=${encodeURIComponent(waypoints)}`;
-                }
-
-                console.log('Fetching URL:', url);
-
-                fetch(url, {
-                    method: 'GET',
-                    url: "https://map.kakao.com/v2/search/web",
-                    headers: {
-                        Authorization: 'KakaoAK 6f28c4040e6851e1e1f3524c3ee25832'  // 실제 API 키로 대체하세요
-                    }
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Response data:', data);
-                        if (data.routes && data.routes.length > 0) {
-                            const sections = data.routes[0].sections;
-                            if (sections && sections.length > 0) {
-                                removePolylines(); // 기존 경로 제거
-                                const path = [];
-                                const bounds = new kakao.maps.LatLngBounds(); // LatLngBounds 객체 생성
-
-                                sections.forEach(section => {
-                                    if (section.roads) {
-                                        section.roads.forEach(road => {
-                                            road.vertexes.forEach((coord, index) => {
-                                                if (index % 2 === 0) {
-                                                    const lat = road.vertexes[index + 1];
-                                                    const lng = coord;
-                                                    const latLng = new kakao.maps.LatLng(lat, lng);
-                                                    path.push(latLng);
-                                                    bounds.extend(latLng); // 경로의 모든 좌표를 LatLngBounds에 추가
-                                                }
-                                            });
-                                        });
-                                    }
-                                });
-
-                                const polyline = new kakao.maps.Polyline({
-                                    map: map,
-                                    path: path,
-                                    strokeWeight: 5,
-                                    strokeColor: '#FF0000',
-                                    strokeOpacity: 0.8,
-                                    strokeStyle: 'solid'
-                                });
-
-                                polylines.push(polyline);
-                                map.setBounds(bounds); // LatLngBounds로 지도 영역 설정
-
-                                // 경로의 총 거리와 예상 소요 시간 표시
-                                const distance = data.routes[0].summary.distance;
-                                const duration = data.routes[0].summary.duration;
-
-                                document.getElementById('routeInfo').innerHTML =
-                                    `총 거리: ${(distance / 1000).toFixed(2)} km<br>예상 소요 시간: ${(duration / 60).toFixed(2)} 분`;
-                            } else {
-                                alert('경로 데이터를 처리할 수 없습니다.');
-                            }
-                        } else {
-                            alert('경로를 찾을 수 없습니다.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching route:', error);
-                        alert('경로를 찾는 중 오류가 발생했습니다.');
-                    });
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                Authorization: 'KakaoAK 6f28c4040e6851e1e1f3524c3ee25832' // 카카오 REST API 키로 대체하세요
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('경로 데이터:', data);
             })
             .catch(error => {
-                console.error('Error finding nearest station:', error);
+                console.error('경로 요청 실패:', error);
             });
-    }
-
-    function removePolylines() {
-        polylines.forEach(function(line) {
-            line.setMap(null);
-        });
-        polylines = [];
     }
 
     function clearResults() {

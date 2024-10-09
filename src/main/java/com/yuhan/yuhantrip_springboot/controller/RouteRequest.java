@@ -7,9 +7,7 @@ public class RouteRequest {
     private Location destination;
     private List<Location> waypoints;
 
-    public Location getOrigin() {
-        return origin;
-    }
+    public Location getOrigin() { return origin; }
 
     public void setOrigin(Location origin) {
         this.origin = origin;

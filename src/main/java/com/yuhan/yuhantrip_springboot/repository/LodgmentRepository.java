@@ -5,8 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LodgmentRepository extends JpaRepository<Lodgment, Long> {
-    List<Lodgment> findAll();  // 모든 숙박 목록을 조회하는 메서드
+    Optional<Lodgment> findByNameAndAddress(String name, String address);
 }

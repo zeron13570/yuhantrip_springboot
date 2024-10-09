@@ -5,8 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CafeRepository extends JpaRepository<Cafe, Long> {
-    List<Cafe> findAll();  // 모든 카페 목록을 조회하는 메서드
+    Optional<Cafe> findByNameAndAddress(String name, String address);
 }
