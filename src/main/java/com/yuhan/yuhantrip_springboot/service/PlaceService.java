@@ -32,7 +32,8 @@ public class PlaceService implements CommandLineRunner {
     @Autowired
     private LodgmentRepository lodgmentRepository;
 
-    private final String API_KEY = "98fd008ffc24d8862055a60d6e18f3e4"; // 실제 API 키로 변경하세요.
+    //private final String API_KEY = "98fd008ffc24d8862055a60d6e18f3e4";
+    private final String API_KEY = "d1533ca76e6ff83395ea27bbf16b5b1a";
     private final String STATE_FILE = "state.json";
 
     @Override
@@ -44,10 +45,10 @@ public class PlaceService implements CommandLineRunner {
         System.out.println("Loaded query states: " + queryStates);
 
         // 데이터 수집 키워드 리스트
-        String[] detailedQueries = {"관광지", "박물관", "아이와체험", "문화예술공간", "미술관", "명소", "카페", "음식점", "식당", "숙박", "호텔", "모텔", "놀거리"};
+        String[] detailedQueries = {"관광지", "박물관", "아이와체험", "문화예술공간", "미술관", "명소", "카페", "음식점", "식당", "숙박", "호텔", "모텔", "놀거리", "전시관"};
 
         // 서울, 부산, 제주도를 순차적으로 수집
-        String[] regions = {"서울", "부산", "제주도"};
+        String[] regions = {"서울", "부산", "제주도", "강릉", "군산", "경주", "인천", "수원", "포항", "울산", "대구", "전주"};
 
         for (String region : regions) {
             System.out.println("Starting data collection for region: " + region);
@@ -131,6 +132,24 @@ public class PlaceService implements CommandLineRunner {
                 return new double[]{35.0400, 35.2400, 128.9000, 129.3000};
             case "제주도":
                 return new double[]{33.1000, 33.5800, 126.1000, 126.9800};
+            case "강릉":
+                return new double[]{37.6000, 37.9000, 128.7000, 129.0000};
+            case "군산":
+                return new double[]{35.8000, 36.1000, 126.6000, 126.9000};
+            case "경주":
+                return new double[]{35.7000, 35.9000, 129.1000, 129.3000};
+            case "인천":
+                return new double[]{37.4000, 37.6000, 126.6000, 126.8000};
+            case "수원":
+                return new double[]{37.2000, 37.4000, 126.9000, 127.1000};
+            case "포항":
+                return new double[]{35.9000, 36.1000, 129.2000, 129.5000};
+            case "울산":
+                return new double[]{35.4000, 35.6000, 129.2000, 129.4000};
+            case "대구":
+                return new double[]{35.7000, 36.0000, 128.5000, 128.7000};
+            case "전주":
+                return new double[]{35.7000, 36.0000, 127.0000, 127.2000};
             default:
                 throw new IllegalArgumentException("Unknown region: " + region);
         }
@@ -162,7 +181,7 @@ public class PlaceService implements CommandLineRunner {
                 }
 
                 try {
-                    Thread.sleep(500);  // 스로틀링 방지
+                    Thread.sleep(300);  // 스로틀링 방지
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
