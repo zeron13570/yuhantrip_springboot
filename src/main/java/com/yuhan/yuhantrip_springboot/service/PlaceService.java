@@ -34,6 +34,7 @@ public class PlaceService implements CommandLineRunner {
 
     //private final String API_KEY = "98fd008ffc24d8862055a60d6e18f3e4";
     private final String API_KEY = "d1533ca76e6ff83395ea27bbf16b5b1a";
+    //private final String API_KEY = "6a7a67f3d602d22e880cf4fabf15b6dc";
     private final String STATE_FILE = "state.json";
 
     @Override
@@ -69,8 +70,8 @@ public class PlaceService implements CommandLineRunner {
                     continue;
                 }
 
-                // 실행시 데이터가져옴
-                fetchAndSavePlacesForAllRects(query, determineCategory(query), queryKey, queryStates, minLat, maxLat, minLon, maxLon);
+                // 실행시 데이터가져옴, 주석하면 데이터안넣음
+                //fetchAndSavePlacesForAllRects(query, determineCategory(query), queryKey, queryStates, minLat, maxLat, minLon, maxLon);
 
                 queryStates.put(queryKey, "completed");
                 saveQueryStates(queryStates);
