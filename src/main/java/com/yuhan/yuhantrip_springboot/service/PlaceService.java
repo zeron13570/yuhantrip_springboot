@@ -1,13 +1,17 @@
 package com.yuhan.yuhantrip_springboot.service;
 
 import PlaceDB.*;
+import PlaceDTO.placeDTO;
 import com.yuhan.yuhantrip_springboot.repository.CafeRepository;
 import com.yuhan.yuhantrip_springboot.repository.FoodRepository;
 import com.yuhan.yuhantrip_springboot.repository.LodgmentRepository;
 import com.yuhan.yuhantrip_springboot.repository.PlaceRepository;
+import org.springframework.data.domain.Page;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.boot.CommandLineRunner;
@@ -16,6 +20,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class PlaceService implements CommandLineRunner {
@@ -32,8 +37,8 @@ public class PlaceService implements CommandLineRunner {
     @Autowired
     private LodgmentRepository lodgmentRepository;
 
-    //private final String API_KEY = "98fd008ffc24d8862055a60d6e18f3e4";
-    private final String API_KEY = "d1533ca76e6ff83395ea27bbf16b5b1a";
+    private final String API_KEY = "98fd008ffc24d8862055a60d6e18f3e4";
+    //private final String API_KEY = "d1533ca76e6ff83395ea27bbf16b5b1a";
     //private final String API_KEY = "6a7a67f3d602d22e880cf4fabf15b6dc";
     private final String STATE_FILE = "state.json";
 
@@ -350,5 +355,66 @@ public class PlaceService implements CommandLineRunner {
     }
     public Place findPlaceByName(String name) {
         return placeRepository.findByName(name);
+    }
+
+    // 관광지 목록 조회
+    public Map<String, Object> getPlacesByCity(String cityName, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<Place> placePage;
+
+        if (cityName != null && !cityName.isEmpty()) {
+            placePage = placeRepository.findByAddressContaining(cityName, pageable);
+        } else {
+            placePage = placeRepository.findAll(pageable);
+        }
+
+        List<placeDTO> placeDTO = placePage.getContent().stream()
+                .map(place -> new placeDTO(place.getName(), place.getAddress()))
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("places", placeDTO);
+        response.put("totalCount", placePage.getTotalElements());
+        return response;
+    }
+    // 카페 목록 조회 (필터링 및 페이지네이션 적용)
+    public Map<String, Object> getCafesByCity(String cityName, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<Cafe> cafePage;
+
+        if (cityName != null && !cityName.isEmpty()) {
+            cafePage = cafeRepository.findByAddressContaining(cityName, pageable);
+        } else {
+            cafePage = cafeRepository.findAll(pageable);
+        }
+
+        List<placeDTO> placeDTO = cafePage.getContent().stream()
+                .map(cafe -> new placeDTO(cafe.getName(), cafe.getAddress()))
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("places", placeDTO);
+        response.put("totalCount", cafePage.getTotalElements());
+        return response;
+    }
+    // 음식점 목록
+    public Map<String, Object> getFoodsByCity(String cityName, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<Food> foodPage;
+
+        if (cityName != null && !cityName.isEmpty()) {
+            foodPage = foodRepository.findByAddressContaining(cityName, pageable);
+        } else {
+            foodPage = foodRepository.findAll(pageable);
+        }
+
+        List<placeDTO> placeDTO = foodPage.getContent().stream()
+                .map(food -> new placeDTO(food.getName(), food.getAddress()))
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("places", placeDTO);
+        response.put("totalCount", foodPage.getTotalElements());
+        return response;
     }
 }

@@ -2,7 +2,10 @@ package com.yuhan.yuhantrip_springboot.controller;
 
 import PlaceDB.*;
 import com.yuhan.yuhantrip_springboot.service.PlaceService;
+import org.springframework.data.domain.Page;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,13 +33,37 @@ public class PlaceController {
     public List<Place> getAllPlaces() {
         return placeService.getAllPlaces();
     }
+    @GetMapping(value = "/place", params = "name") // 'name' 파라미터가 있는 경우
+    public Map<String, Object> getPlacesWithName(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        return placeService.getPlacesByCity(name, page, limit);
+    }
     @GetMapping("/cafe")
     public List<Cafe> getAllCafes() {
         return placeService.getAllCafes();
     }
+    @GetMapping(value = "/cafe", params = "name") // 'name' 파라미터가 있는 경우
+    public Map<String, Object> getCafesWithName(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        return placeService.getCafesByCity(name, page, limit);
+    }
     @GetMapping("/food")
     public List<Food> getAllFoods() {
         return placeService.getAllFoods();
+    }
+    @GetMapping(value = "/food", params = "name") // 'name' 파라미터가 있는 경우
+    public Map<String, Object> getFoodsWithName(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+
+        return placeService.getFoodsByCity(name, page, limit);
     }
     @GetMapping("/lodgment")
     public List<Lodgment> getAllLodgments() {
