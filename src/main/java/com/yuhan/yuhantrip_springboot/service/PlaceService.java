@@ -337,17 +337,68 @@ public class PlaceService implements CommandLineRunner {
     }
 
     // 조회 메서드들
-    public List<Place> getAllPlaces() {
-        return placeRepository.findAll();
+    public Map<String, Object> getPlaces(String filter, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<Place> placePage;
+
+        if (filter != null && !filter.isEmpty()) {
+            placePage = placeRepository.findByAddressContaining(filter, pageable);
+        } else {
+            placePage = placeRepository.findAll(pageable);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("places", placePage.getContent());
+        response.put("totalCount", placePage.getTotalElements());
+        return response;
     }
-    public List<Cafe> getAllCafes() {
-        return cafeRepository.findAll();
+
+    public Map<String, Object> getCafes(String filter, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<Cafe> cafePage;
+
+        if (filter != null && !filter.isEmpty()) {
+            cafePage = cafeRepository.findByAddressContaining(filter, pageable);
+        } else {
+            cafePage = cafeRepository.findAll(pageable);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("cafes", cafePage.getContent());
+        response.put("totalCount", cafePage.getTotalElements());
+        return response;
     }
-    public List<Food> getAllFoods() {
-        return foodRepository.findAll();
+
+    public Map<String, Object> getFoods(String filter, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<Food> foodPage;
+
+        if (filter != null && !filter.isEmpty()) {
+            foodPage = foodRepository.findByAddressContaining(filter, pageable);
+        } else {
+            foodPage = foodRepository.findAll(pageable);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("foods", foodPage.getContent());
+        response.put("totalCount", foodPage.getTotalElements());
+        return response;
     }
-    public List<Lodgment> getAllLodgments() {
-        return lodgmentRepository.findAll();
+
+    public Map<String, Object> getLodgments(String filter, int page, int limit) {
+        Pageable pageable = PageRequest.of(page - 1, limit);
+        Page<Lodgment> lodgmentPage;
+
+        if (filter != null && !filter.isEmpty()) {
+            lodgmentPage = lodgmentRepository.findByAddressContaining(filter, pageable);
+        } else {
+            lodgmentPage = lodgmentRepository.findAll(pageable);
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("lodgments", lodgmentPage.getContent());
+        response.put("totalCount", lodgmentPage.getTotalElements());
+        return response;
     }
     // DB + 지도api 경로찾기
     public Place getPlaceByName(String name) {

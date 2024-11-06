@@ -13,5 +13,6 @@ import java.util.Optional;
 public interface PlaceRepository extends JpaRepository<Place, Long> {
     Optional<Place> findByNameAndAddress(String name, String address);
     Place findByName(String name);
+
     Page<Place> findByAddressContaining(String address, Pageable pageable);
 }

@@ -30,8 +30,11 @@ public class PlaceController {
         return "Places fetched and saved successfully for all regions!";
     }
     @GetMapping("/place")
-    public List<Place> getAllPlaces() {
-        return placeService.getAllPlaces();
+    public Map<String, Object> getPlaces(
+            @RequestParam(required = false) String filter,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        return placeService.getPlaces(filter, page, limit);
     }
     @GetMapping(value = "/place", params = "name") // 'name' 파라미터가 있는 경우
     public Map<String, Object> getPlacesWithName(
@@ -42,8 +45,11 @@ public class PlaceController {
         return placeService.getPlacesByCity(name, page, limit);
     }
     @GetMapping("/cafe")
-    public List<Cafe> getAllCafes() {
-        return placeService.getAllCafes();
+    public Map<String, Object> getCafes(
+            @RequestParam(required = false) String filter,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        return placeService.getCafes(filter, page, limit);
     }
     @GetMapping(value = "/cafe", params = "name") // 'name' 파라미터가 있는 경우
     public Map<String, Object> getCafesWithName(
@@ -54,8 +60,11 @@ public class PlaceController {
         return placeService.getCafesByCity(name, page, limit);
     }
     @GetMapping("/food")
-    public List<Food> getAllFoods() {
-        return placeService.getAllFoods();
+    public Map<String, Object> getFoods(
+            @RequestParam(required = false) String filter,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        return placeService.getFoods(filter, page, limit);
     }
     @GetMapping(value = "/food", params = "name") // 'name' 파라미터가 있는 경우
     public Map<String, Object> getFoodsWithName(
@@ -66,8 +75,11 @@ public class PlaceController {
         return placeService.getFoodsByCity(name, page, limit);
     }
     @GetMapping("/lodgment")
-    public List<Lodgment> getAllLodgments() {
-        return placeService.getAllLodgments();
+    public Map<String, Object> getLodgments(
+            @RequestParam(required = false) String filter,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit) {
+        return placeService.getLodgments(filter, page, limit);
     }
 
     @GetMapping("/coordinates")
