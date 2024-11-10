@@ -19,6 +19,16 @@ public class PlaceController {
     @Autowired
     private PlaceService placeService;
 
+    private String addProvincePrefix(String cityName) {
+        // 지역명 앞에 도/광역시 정보를 추가
+        switch (cityName) {
+            case "수원":
+                return "경기 " + cityName;
+            default:
+                return cityName;
+        }
+    }
+
     // 특정 키워드로 여러 지역의 데이터를 가져오는 API
     @GetMapping("/fetch-places-for-all-regions")
     public String fetchPlacesForAllRegions(@RequestParam String query,
@@ -34,52 +44,63 @@ public class PlaceController {
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        return placeService.getPlaces(filter, page, limit);
+        String fullFilter = (filter != null) ? addProvincePrefix(filter) : null;
+
+        return placeService.getPlaces(fullFilter, page, limit);
     }
     @GetMapping(value = "/place", params = "name") // 'name' 파라미터가 있는 경우
     public Map<String, Object> getPlacesWithName(
             @RequestParam String name,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit) {
+        String fullName = addProvincePrefix(name);
 
-        return placeService.getPlacesByCity(name, page, limit);
+        return placeService.getPlacesByCity(fullName, page, limit);
     }
     @GetMapping("/cafe")
     public Map<String, Object> getCafes(
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        return placeService.getCafes(filter, page, limit);
+        String fullFilter = (filter != null) ? addProvincePrefix(filter) : null;
+
+        return placeService.getCafes(fullFilter, page, limit);
     }
     @GetMapping(value = "/cafe", params = "name") // 'name' 파라미터가 있는 경우
     public Map<String, Object> getCafesWithName(
             @RequestParam String name,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit) {
+        String fullName = addProvincePrefix(name);
 
-        return placeService.getCafesByCity(name, page, limit);
+        return placeService.getCafesByCity(fullName, page, limit);
     }
     @GetMapping("/food")
     public Map<String, Object> getFoods(
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        return placeService.getFoods(filter, page, limit);
+        String fullFilter = (filter != null) ? addProvincePrefix(filter) : null;
+
+        return placeService.getFoods(fullFilter, page, limit);
     }
     @GetMapping(value = "/food", params = "name") // 'name' 파라미터가 있는 경우
     public Map<String, Object> getFoodsWithName(
             @RequestParam String name,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit) {
+        String fullName = addProvincePrefix(name);
 
-        return placeService.getFoodsByCity(name, page, limit);
+        return placeService.getFoodsByCity(fullName, page, limit);
     }
     @GetMapping("/lodgment")
     public Map<String, Object> getLodgments(
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        return placeService.getLodgments(filter, page, limit);
+        String fullFilter = (filter != null) ? addProvincePrefix(filter) : null;
+
+        return placeService.getLodgments(fullFilter, page, limit);
     }
 
     @GetMapping("/coordinates")
