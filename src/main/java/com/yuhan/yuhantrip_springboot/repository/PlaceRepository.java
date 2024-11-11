@@ -15,4 +15,5 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
     Place findByName(String name);
 
     Page<Place> findByAddressContaining(String address, Pageable pageable);
+    Page<Place> findByAddressStartingWith(String address, Pageable pageable);
 }

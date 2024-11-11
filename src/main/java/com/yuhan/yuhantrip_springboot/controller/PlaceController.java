@@ -44,7 +44,7 @@ public class PlaceController {
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        String fullFilter = (filter != null) ? addProvincePrefix(filter) : null;
+        String fullFilter = (filter != null) ? addProvincePrefix(filter.trim()) : null;
 
         return placeService.getPlaces(fullFilter, page, limit);
     }
@@ -62,7 +62,7 @@ public class PlaceController {
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        String fullFilter = (filter != null) ? addProvincePrefix(filter) : null;
+        String fullFilter = (filter != null) ? addProvincePrefix(filter.trim()) : null;
 
         return placeService.getCafes(fullFilter, page, limit);
     }
@@ -80,7 +80,7 @@ public class PlaceController {
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit) {
-        String fullFilter = (filter != null) ? addProvincePrefix(filter) : null;
+        String fullFilter = (filter != null) ? addProvincePrefix(filter.trim()) : null;
 
         return placeService.getFoods(fullFilter, page, limit);
     }

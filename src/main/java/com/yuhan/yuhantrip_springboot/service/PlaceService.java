@@ -342,7 +342,13 @@ public class PlaceService implements CommandLineRunner {
         Page<Place> placePage;
 
         if (filter != null && !filter.isEmpty()) {
-            placePage = placeRepository.findByAddressContaining(filter, pageable);
+            if (filter.equals("대구")) {
+                // 대구의 경우 주소가 '대구'로 시작하는 데이터 조회
+                placePage = placeRepository.findByAddressStartingWith(filter, pageable);
+            } else {
+                // 다른 지역의 경우 주소에 필터 문자열이 포함된 데이터 조회
+                placePage = placeRepository.findByAddressContaining(filter, pageable);
+            }
         } else {
             placePage = placeRepository.findAll(pageable);
         }
@@ -358,7 +364,12 @@ public class PlaceService implements CommandLineRunner {
         Page<Cafe> cafePage;
 
         if (filter != null && !filter.isEmpty()) {
-            cafePage = cafeRepository.findByAddressContaining(filter, pageable);
+            if (filter.equals("대구")) {
+                // 대구의 경우 주소가 '대구'로 시작하는 데이터 조회
+                cafePage = cafeRepository.findByAddressStartingWith(filter, pageable);
+            } else {
+                cafePage = cafeRepository.findByAddressContaining(filter, pageable);
+            }
         } else {
             cafePage = cafeRepository.findAll(pageable);
         }
@@ -374,7 +385,13 @@ public class PlaceService implements CommandLineRunner {
         Page<Food> foodPage;
 
         if (filter != null && !filter.isEmpty()) {
-            foodPage = foodRepository.findByAddressContaining(filter, pageable);
+            if (filter.equals("대구")) {
+                // 대구의 경우 주소가 '대구'로 시작하는 데이터 조회
+                foodPage = foodRepository.findByAddressStartingWith(filter, pageable);
+            } else {
+                // 다른 지역의 경우 주소에 필터 문자열이 포함된 데이터 조회
+                foodPage = foodRepository.findByAddressContaining(filter, pageable);
+            }
         } else {
             foodPage = foodRepository.findAll(pageable);
         }
@@ -390,7 +407,13 @@ public class PlaceService implements CommandLineRunner {
         Page<Lodgment> lodgmentPage;
 
         if (filter != null && !filter.isEmpty()) {
-            lodgmentPage = lodgmentRepository.findByAddressContaining(filter, pageable);
+            if (filter.equals("대구")) {
+                // 대구의 경우 주소가 '대구'로 시작하는 데이터 조회
+                lodgmentPage = lodgmentRepository.findByAddressStartingWith(filter, pageable);
+            } else {
+                // 다른 지역의 경우 주소에 필터 문자열이 포함된 데이터 조회
+                lodgmentPage = lodgmentRepository.findByAddressContaining(filter, pageable);
+            }
         } else {
             lodgmentPage = lodgmentRepository.findAll(pageable);
         }
@@ -414,7 +437,13 @@ public class PlaceService implements CommandLineRunner {
         Page<Place> placePage;
 
         if (cityName != null && !cityName.isEmpty()) {
-            placePage = placeRepository.findByAddressContaining(cityName, pageable);
+            if (cityName.equals("대구")) {
+                // 대구의 경우 주소가 '대구'로 시작하는 데이터 조회
+                placePage = placeRepository.findByAddressStartingWith(cityName, pageable);
+            } else {
+                // 다른 지역의 경우 주소에 필터 문자열이 포함된 데이터 조회
+                placePage = placeRepository.findByAddressContaining(cityName, pageable);
+            }
         } else {
             placePage = placeRepository.findAll(pageable);
         }
@@ -434,7 +463,13 @@ public class PlaceService implements CommandLineRunner {
         Page<Cafe> cafePage;
 
         if (cityName != null && !cityName.isEmpty()) {
-            cafePage = cafeRepository.findByAddressContaining(cityName, pageable);
+            if (cityName.equals("대구")) {
+                // 대구의 경우 주소가 '대구'로 시작하는 데이터 조회
+                cafePage = cafeRepository.findByAddressStartingWith(cityName, pageable);
+            } else {
+                // 다른 지역의 경우 주소에 필터 문자열이 포함된 데이터 조회
+                cafePage = cafeRepository.findByAddressContaining(cityName, pageable);
+            }
         } else {
             cafePage = cafeRepository.findAll(pageable);
         }
@@ -454,7 +489,13 @@ public class PlaceService implements CommandLineRunner {
         Page<Food> foodPage;
 
         if (cityName != null && !cityName.isEmpty()) {
-            foodPage = foodRepository.findByAddressContaining(cityName, pageable);
+            if (cityName.equals("대구")) {
+                // 대구의 경우 주소가 '대구'로 시작하는 데이터 조회
+                foodPage = foodRepository.findByAddressStartingWith(cityName, pageable);
+            } else {
+                // 다른 지역의 경우 주소에 필터 문자열이 포함된 데이터 조회
+                foodPage = foodRepository.findByAddressContaining(cityName, pageable);
+            }
         } else {
             foodPage = foodRepository.findAll(pageable);
         }

@@ -14,4 +14,5 @@ import java.util.Optional;
 public interface CafeRepository extends JpaRepository<Cafe, Long> {
     Optional<Cafe> findByNameAndAddress(String name, String address);
     Page<Cafe> findByAddressContaining(String address, Pageable pageable);
-    }
+    Page<Cafe> findByAddressStartingWith(String address, Pageable pageable);
+}

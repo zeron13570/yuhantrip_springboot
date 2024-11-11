@@ -14,4 +14,5 @@ import java.util.Optional;
 public interface LodgmentRepository extends JpaRepository<Lodgment, Long> {
     Optional<Lodgment> findByNameAndAddress(String name, String address);
     Page<Lodgment> findByAddressContaining(String address, Pageable pageable);
-    }
+    Page<Lodgment> findByAddressStartingWith(String address, Pageable pageable);
+}
